@@ -1,9 +1,10 @@
 
 OVERVIEW
 
-Spin Pong is an fun and addictive 2-player Pong game for PS3, with some interesting physics.
-This was coded on a retail unit, using logging over UDP.
-All sounds are recorded with a mic and a mouth.
+Spin Pong is an fun and addictive 2-player Pong game for PS3, with some interesting physics and stereo sound.
+
+This was coded only using a retail unit, using logging over UDP.
+
 I used the guide from: 
 http://www.ps3news.com/forums/ps3-guides-tutorials/how-install-set-up-ps3-sdk-1-92-properly-112755.html
 Thanks go to internetfloozy.
