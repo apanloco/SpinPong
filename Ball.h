@@ -24,7 +24,6 @@ class Ball
   virtual ~Ball();
   void set_size(float size1) { _size = size1; }
   void set_position(float x1, float y1) { _x = x1; _y = y1; }
-  void set_color(float r, float g, float b) { _colorR = r; _colorG = g; _colorB = b; }  
   void set_direction(float dirX, float dirY) { _dirX = dirX; _dirY = dirY; } 
   void set_acceleration(float acc) { _acc = acc; }
   void set_speed(float speed) { _speed = speed; }
@@ -56,7 +55,6 @@ private:
   float _speed;
   float _spin;
   float _angle;
-  float _colorR, _colorG, _colorB;
   float _acc;
   float *_verts;
   void mat_mult(float M[16], float v[4]);

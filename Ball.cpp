@@ -52,15 +52,15 @@ void Ball::render()
 
   if(_spin < 0)
   {
-    r = 1;
-    g = 1 + _spin;
-    b = 1 + _spin;
+    r = 1 + (_spin * 0.1f);
+    g = 1 + (_spin * 0.9f);
+    b = 1 + (_spin * 0.9f);
   }
   else
   {
-    r = 1 - _spin;
-    g = 1 - _spin;
-    b = 1;
+    r = 1 - (_spin * 0.9f);
+    g = 1 - (_spin * 0.9f);
+    b = 1 - (_spin * 0.1f);
   }
 
   glPushMatrix();

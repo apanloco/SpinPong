@@ -35,82 +35,28 @@
 
 
 unsigned int log_counter = 0;
-int log_fd = -1;
 int socket_fd = -1;
 struct sockaddr_in address;
 
 #define BUF_LEN 1024
 
-void log_init_file(const char *filename) {
-  (void) cellSysmoduleInitialize();
-
-  if (cellSysmoduleLoadModule(CELL_SYSMODULE_FS)) {
-    sys_process_exit(1);
-  }
-
-//  if (!isMounted(MOUNT_POINT)) {
-//     sys_process_exit(1);
-//  }
-
-  CellFsErrno err = cellFsOpen(filename, CELL_FS_O_RDWR|CELL_FS_O_CREAT, &log_fd, NULL, 0);
-  if(err != CELL_FS_SUCCEEDED) {
-    log_fd = -1;
-    return;
-  }
-
-  log_file("%s: log file '%s' opened\n", __func__, filename);
-}
-
-void log_init_net(const char *host, unsigned short port)
+void log_init(const char *host, unsigned short port)
 {
+#ifdef ENABLE_LOG
   unsigned int temp;
   struct hostent *hp;
-  int ret;
 
-  log_file("%s: calling cellSysmoduleLoadModule(CELL_SYSMODULE_NET)\n", __func__);
-  ret = cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
-  if (ret < 0) {
-    log_file("%s: WARNING, call to cellSysmoduleLoadModule() failed (%d)\n", __func__, ret);
-  }
-
-  log_file("%s: calling sys_net_initialize_network\n", __func__);
-  ret = sys_net_initialize_network();
-  if (ret < 0) {
-    log_file("%s: WARNING, sys_net_initialize_network() failed (%d)\n", __func__, ret);
-  }
-
-#if 0
-  log_file("%s: calling cellNetCtlInit\n", __func__);
-  ret = cellNetCtlInit();
-  if (ret < 0) {
-    log_file("%s: WARNING, call to cellNetCtlInit() failed (%x)\n", __func__, ret);
-  }
-
-  int state;
-  log_file("%s: calling cellNetCtlGetState\n", __func__);
-  ret = cellNetCtlGetState(&state);
-  if (ret < 0) {
-    log_file("%s: WARNING, call to cellNetCtlGetState() failed (%x)\n", __func__, ret);
-  } else {
-    if (state == CELL_NET_CTL_STATE_IPObtained) {
-      log_file("%s: Obtained IP!\n");
-    } else {
-      log_file("%s: WARNING, IP not obtained\n");
-    }
-  }
-#endif
+  (void) cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
+  (void) sys_net_initialize_network();
   
   memset(&address, 0, sizeof(address));
   
-  log_file("%s: inet_addr\n", __func__);
   if ((unsigned int)-1 != (temp = inet_addr(host))) {
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = temp;
   }
   else {
-    log_file("%s: gethostbyname\n", __func__);
     if (NULL == (hp = gethostbyname(host))) {
-      log_file("%s: unknown host '%s', errno: %d\n", __func__, host, sys_net_h_errno);
       return;
     }
     address.sin_family = hp->h_addrtype;
@@ -119,44 +65,26 @@ void log_init_net(const char *host, unsigned short port)
 
   address.sin_port = htons(port);
 
-  log_file("%s: calling socket()\n", __func__);
   socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
   if (socket_fd < 0) {
-    log_file("%s: call to socket() failed, errno: %d\n", __func__, sys_net_errno);
     return;
   }
 
-  log_file("%s: created udp socket, address setup towards %s:%d\n", __func__, inet_ntoa(address.sin_addr), port);
-  log_net ("%s: created udp socket, address setup towards %s:%d\n", __func__, inet_ntoa(address.sin_addr), port);
+  log("%s: created udp socket, address setup towards %s:%d\n", __func__, inet_ntoa(address.sin_addr), port);
+#endif
 }
 
 void log_close() {
-  if(log_fd != -1) {
-    (void) cellFsClose(log_fd);
+#ifdef ENABLE_LOG
+  if(socket_fd != -1) {
+    socketclose(socket_fd);
   }
+#endif
 }
 
-void log_file(const char *format, ...) {
-  if(log_fd == -1) {
-    return;
-  }
-  char buf[BUF_LEN];
-  int max = sizeof(buf);
-  uint64_t sw;
-  va_list va;
-  va_start(va, format);
-  int written = vsnprintf(buf, max, format, va);
-  if (written > max) {
-    written = max;
-  }
-  va_end(va);
-  (void) cellFsWrite(log_fd, (const void *)buf, (uint64_t)written, &sw);
-  (void) cellFsFsync(log_fd); // really slow, but just to be sure it's there in case of crash
-}
-
-void log_net(const char *format, ...) {
+void log(const char *format, ...) {
+#ifdef ENABLE_LOG
   if(socket_fd == -1) {
-    log_file("%s: cannot log to net, socket not initialized\n", __func__);
     return;
   }
 
@@ -174,11 +102,6 @@ void log_net(const char *format, ...) {
 
   va_end(va);
   
-  int ret = sendto(socket_fd, buf, written, 0, (struct sockaddr *)&address, sizeof(address));
-
-  if (ret < 0) {
-    log_file("%s: sendto() failed, errno: %d\n", __func__, sys_net_errno);
-    return;
-  }
-
+  (void) sendto(socket_fd, buf, written, 0, (struct sockaddr *)&address, sizeof(address));
+#endif
 }

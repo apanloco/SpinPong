@@ -30,9 +30,13 @@ public:
     P1_ACC,
     P1_READY,
     P1_NOT_READY,
+    P1_RESET,
+    P1_NOT_RESET,
     P2_ACC,
     P2_READY,
     P2_NOT_READY,
+    P2_RESET,
+    P2_NOT_RESET,
     PAUSE,
     ON_SCREEN_LOG_ON,
     ON_SCREEN_LOG_OFF
@@ -60,5 +64,7 @@ private:
   FWInputFilter  *_p2Y0;
   FWInputFilter  *_p1Cross;
   FWInputFilter  *_p1Triangle;
+  FWInputFilter  *_p1Start;
   FWInputFilter  *_p2Cross;
+  FWInputFilter  *_p2Start;
 };

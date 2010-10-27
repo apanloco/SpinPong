@@ -75,6 +75,7 @@ private:
   sys_addr_t _readIndexAddr;
   SoundInfo *_currentSound;
   int _soundPos;
+  sys_cond_t _cond;
   sys_mutex_t _mutex;
   float _leftVolume;
   float _rightVolume;

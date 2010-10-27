@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include <cell/audio.h>
+#include <cell/sysmodule.h>
 #include <sys/event.h>
 #include <sys/ppu_thread.h>
 #include <sys/synchronization.h>
@@ -35,18 +36,12 @@
 
 #define SOUND_PATH "/dev_hdd0/game/SPNP12345/USRDIR/sound/"
 
-#define TIMEOUT 5000000 // mutex timeout, 5 secs
+#define TIMEOUT 3000000 // mutex & cond & event queue timeout, 3 secs
 
 Sound::Sound()
 {
   _currentSound = NULL;
   _soundPos = 0;
-  sys_mutex_attribute_t mut_attr;
-  sys_mutex_attribute_initialize(mut_attr);
-  int error = sys_mutex_create(&_mutex, &mut_attr);
-  if(error != CELL_OK) {
-    LOG("WARNING: failed to create mutex: %x", error);
-  }
   for(int i = 0; i < SOUND_NUM; i++) {
     memset(&_sounds[i], 0, sizeof(struct SoundInfo));
   }
@@ -58,6 +53,7 @@ Sound::~Sound()
   (void) sys_event_queue_destroy(_eventQueue, 0);
   (void) cellAudioPortClose(_audioPort);
   (void) cellAudioQuit();
+  (void) sys_cond_destroy(_cond);
   (void) sys_mutex_destroy(_mutex);
 
   for(int i = 0; i < SOUND_NUM; i++) {
@@ -66,20 +62,30 @@ Sound::~Sound()
 }
 
 void Sound::soundMain(uint64_t arg) {
-  LOG("");
   Sound *self = reinterpret_cast<Sound *>(arg);
   self->soundMainInternal();  
 }
 
 void Sound::soundMainInternal() {
-  LOG("");
+  int error;
+
   if(initCellAudio() == false) {
     LOG("Failed to init cell audio");
     return;
   }
+
+  sys_event_queue_drain(_eventQueue);
+  
+  LOG("Starting sound loop");
+
+  error = sys_cond_signal(_cond);
+  if(error != CELL_OK) {
+    LOG("WARNING: call to sys_cond_signal failed");
+  }
+
   while(1) {
     sys_event_t event;
-    int error = sys_event_queue_receive(_eventQueue, &event, 4 * 1000 * 1000);
+    error = sys_event_queue_receive(_eventQueue, &event, TIMEOUT);
     if(error == ETIMEDOUT) {
       LOG("Received ETIMEDOUT from sys_event_queue_receive");
       continue;
@@ -90,9 +96,9 @@ void Sound::soundMainInternal() {
 
 void Sound::writeAudio() {
   int error;
-  int currentReadBlock = *(uint64_t *)_readIndexAddr;
+  int blockIndex = *(uint64_t *)_readIndexAddr;
   int samplesToWrite = CELL_AUDIO_BLOCK_SAMPLES * AUDIO_CHANNEL_COUNT;
-  float *outBuffer = _audioBuffer + AUDIO_CHANNEL_COUNT * CELL_AUDIO_BLOCK_SAMPLES * currentReadBlock;
+  float *outBuffer = _audioBuffer + AUDIO_CHANNEL_COUNT * CELL_AUDIO_BLOCK_SAMPLES * blockIndex;
 
   error = sys_mutex_lock(_mutex, TIMEOUT);
   if(error != CELL_OK) {
@@ -100,10 +106,11 @@ void Sound::writeAudio() {
   }
 
   if(_currentSound == NULL) {
+    memset(outBuffer, 0, samplesToWrite * sizeof(float));
     goto done;
   }
 
-  LOG("currentSound: %08X, currentReadBlock: %d, samplesToWrite: %d, outBuffer: %08X", _currentSound, currentReadBlock, samplesToWrite, outBuffer);
+  LOG("currentSound: %08X, blockIndex: %d, samplesToWrite: %d, outBuffer: %08X", _currentSound, blockIndex, samplesToWrite, outBuffer);
 
   for(int i = 0; i < samplesToWrite; i++) {
     float sample = _currentSound->data[_soundPos];
@@ -127,6 +134,9 @@ done:
 
 bool Sound::init()
 {
+  (void) cellSysmoduleLoadModule(CELL_SYSMODULE_AUDIO);
+  (void) cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
+
   LoadRAW(SOUND_PATH "start1.raw",  &_sounds[SOUND_START1]);
   LoadRAW(SOUND_PATH "start2.raw",  &_sounds[SOUND_START2]);
   LoadRAW(SOUND_PATH "start3.raw",  &_sounds[SOUND_START3]);
@@ -156,9 +166,39 @@ bool Sound::init()
 #endif
 
   int error;
+  sys_mutex_attribute_t mut_attr;
+  sys_mutex_attribute_initialize(mut_attr);
+  error = sys_mutex_create(&_mutex, &mut_attr);
+  if(error != CELL_OK) {
+    LOG("WARNING: failed to create mutex: %x", error);
+  }
+
+  sys_cond_attribute_t cond_attr;
+  sys_cond_attribute_initialize(cond_attr);
+  error = sys_cond_create(&_cond, _mutex, &cond_attr);
+  if(error != CELL_OK) {
+    LOG("WARNING: failed to create condition variable: %x", error);
+  }
+
+  error = sys_mutex_lock(_mutex, TIMEOUT);
+  if(error != CELL_OK) {
+    LOG("call to sys_mutex_lock() failed: %x", error);
+  }
+
   error = sys_ppu_thread_create(&_threadId, soundMain, (uint64_t)this, 100, 0x8000, 0 /*SYS_PPU_THREAD_CREATE_JOINABLE*/, (char *)"sound thread");
   if(error != CELL_OK) {
-    LOG("call to sys_ppu_thread_create failed: %x", error);
+    LOG("WARNING: call to sys_ppu_thread_create failed (no sound): %x", error);
+  }
+
+  // will wait here until sound loop starts
+  error = sys_cond_wait(_cond, TIMEOUT);
+  if(error != CELL_OK) {
+    LOG("WARNING: call to sys_cond_wait failed: %x", error);
+  }
+
+  error = sys_mutex_unlock(_mutex);
+  if(error != CELL_OK) {
+    LOG("call to sys_mutex_unlock() failed: %x", error);
   }
 
   return true;
@@ -198,6 +238,13 @@ bool Sound::initCellAudio() {
   _audioBuffer = (float *)config.portAddr;
   _readIndexAddr = config.readIndexAddr;
 
+  error = cellAudioPortStart(_audioPort);
+  if(error != CELL_OK) {
+    LOG("call to cellAudioPortStart failed: %x", error);
+    cellAudioQuit();
+    return false;
+  }
+
   error = cellAudioCreateNotifyEventQueue(&_eventQueue, &_queueKey);
   if(error != CELL_OK){
     cellAudioPortClose(_audioPort);
@@ -211,15 +258,6 @@ bool Sound::initCellAudio() {
       LOG("WARNING: call to sys_event_queue_destroy failed");
     }
     cellAudioPortClose(_audioPort);
-    cellAudioQuit();
-    return false;
-  }
-
-  sys_event_queue_drain(_eventQueue);
-
-  error = cellAudioPortStart(_audioPort);
-  if(error != CELL_OK) {
-    LOG("call to cellAudioPortStart failed: %x", error);
     cellAudioQuit();
     return false;
   }

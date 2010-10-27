@@ -26,6 +26,7 @@ bool Input::reset()
     LOG("WARNING: Could not get pad 1");
     _p1Y0 = NULL; 
     _p1Cross = NULL;
+    _p1Start = NULL;
   } else {
     _p1Y0 = pad1->bindFilter();
     _p1Y0->setChannel(FWInput::Channel_YAxis_0);
@@ -34,6 +35,8 @@ bool Input::reset()
     _p1Cross->setChannel(FWInput::Channel_Button_Cross);
     _p1Triangle = pad1->bindFilter();
     _p1Triangle->setChannel(FWInput::Channel_Button_Triangle);
+    _p1Start = pad1->bindFilter();
+    _p1Start->setChannel(FWInput::Channel_Button_Start);
   }
 
   FWInputDevice *pad2 = FWInput::getDevice(FWInput::DeviceType_Pad, 1);
@@ -42,12 +45,15 @@ bool Input::reset()
     LOG("WARNING: Could not get pad 2");
     _p2Y0 = NULL; 
     _p2Cross = NULL;
+    _p2Start = NULL;
   } else {
     _p2Y0 = pad2->bindFilter();
     _p2Y0->setChannel(FWInput::Channel_YAxis_0);
     _p2Y0->setDeadzone(0.1f);
     _p2Cross = pad2->bindFilter();
     _p2Cross->setChannel(FWInput::Channel_Button_Cross);
+    _p2Start = pad2->bindFilter();
+    _p2Start->setChannel(FWInput::Channel_Button_Start);
   }
 
   return true;
@@ -55,7 +61,7 @@ bool Input::reset()
 
 bool Input::teardown()
 {
-  FWInputDevice  *pad1 = FWInput::getDevice(FWInput::DeviceType_Pad, 0);
+  FWInputDevice *pad1 = FWInput::getDevice(FWInput::DeviceType_Pad, 0);
 
   if(pad1 != NULL) {
     if(_p1Y0 != NULL) {
@@ -67,13 +73,17 @@ bool Input::teardown()
     if(_p1Triangle != NULL) {
       pad1->unbindFilter(_p1Triangle);
     }
+    if(_p1Start != NULL) {
+      pad1->unbindFilter(_p1Start);
+    }
   }
 
   _p1Y0 = NULL;
   _p1Cross = NULL;
   _p1Triangle = NULL;
+  _p1Start = NULL;
 
-  FWInputDevice  *pad2 = FWInput::getDevice(FWInput::DeviceType_Pad, 1);
+  FWInputDevice *pad2 = FWInput::getDevice(FWInput::DeviceType_Pad, 1);
 
   if(pad2 != NULL) {
     if(_p2Y0 != NULL) {
@@ -82,11 +92,15 @@ bool Input::teardown()
     if(_p2Cross != NULL) {
       pad2->unbindFilter(_p2Cross);
     }
+    if(_p2Start != NULL) {
+      pad2->unbindFilter(_p2Cross);
+    }
   }
   
   _p2Y0 = NULL;
   _p2Cross = NULL;
-  
+  _p2Start = NULL;
+
   return true;
 }
 
@@ -138,6 +152,28 @@ InputEvent *Input::get_events(int *numEvents)
       addEvent(&e, numEvents);
     } else if (_p2Cross->getBoolFalse()) {
       e.type = InputEvent::P2_NOT_READY;
+      addEvent(&e, numEvents);
+    }
+  }
+
+  // RESET
+
+  if(_p1Start != NULL) {
+    if(_p1Start->getBoolTrue()) {
+      e.type = InputEvent::P1_RESET;
+      addEvent(&e, numEvents);
+    } else if (_p1Start->getBoolFalse()) {
+      e.type = InputEvent::P1_NOT_RESET;
+      addEvent(&e, numEvents);
+    }
+  }
+
+  if(_p2Start != NULL) {
+    if(_p2Start->getBoolTrue()) {
+      e.type = InputEvent::P2_RESET;
+      addEvent(&e, numEvents);
+    } else if (_p2Start->getBoolFalse()) {
+      e.type = InputEvent::P2_NOT_RESET;
       addEvent(&e, numEvents);
     }
   }

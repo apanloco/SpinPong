@@ -21,7 +21,7 @@
 
 #include "FWDebugFont.h"
 
-#define LOG_FILE "/dev_usb000/log"
+// change these to log to another host
 #define LOG_HOST "192.168.1.2"
 #define LOG_PORT 6160
 
@@ -40,13 +40,11 @@
 // instantiate the class
 Main app;
 
-int g_version = 6;
-
 //-----------------------------------------------------------------------------
 // Description: Constructor
 //-----------------------------------------------------------------------------
 Main::Main() : _paddle1(_paddle[0]), _paddle2(_paddle[1]), _paused(false), _onScreenLog(false), _bounces(-1) {
-  strcpy(mStartupInfo.mWindowTitle, "Hello World for PS3");
+  strcpy(mStartupInfo.mWindowTitle, "Sping Pong");
   strcpy(mStartupInfo.mArgumentsFilename, "fwArgs.txt");
   mDispInfo.mAntiAlias = true;
   mStartupInfo.mUseDebugConsole = false;
@@ -60,10 +58,9 @@ bool Main::onInit(int argc, char **ppArgv) {
 
   setProjectionMode(ProjectionMode_Orthographic);
 
-  log_init_file(LOG_FILE);
-  log_init_net (LOG_HOST, LOG_PORT);
-
-  LOG_SAFE("Log initiated");
+  log_init(LOG_HOST, LOG_PORT);
+  
+  LOG("Log initiated");
 
   srand(time(NULL));
 
@@ -78,33 +75,45 @@ bool Main::onInit(int argc, char **ppArgv) {
     LOG("Could not reset input devices");
     panic();
   }
- 
+
   if(!_sound.init())
   {
     LOG("WARNING: Could not initialize sound");
   }
-  
+
   _tc.reset(_settings.step);
 
   _score1 = 0;
   _score2 = 0;
-  
+
   reset();
   
+  setClearRed(0.0f);
+  setClearGreen(0.0f);
+  setClearBlue(0.0f);
+
   return true;
 }
 
 bool Main::onUpdate() {
-  //LOG("onUpdate()");
+  LOG("onUpdate()");
   return FWGLApplication::onUpdate();
 }
 
 void Main::onRender() {
-  //LOG("onRender()");
+  LOG("onRender()");
 
   FWGLApplication::onRender();
 
   handle_events();
+
+  if(_paddle1.wants_reset() && _paddle2.wants_reset())
+  {
+    _score1 = _score2 = 0;
+    reset();
+    _paddle1.set_wants_reset(false);
+    _paddle2.set_wants_reset(false);
+  }
   
   if(_paddle1.ready() && _paddle2.ready() &&!_ready)
   {
@@ -143,7 +152,7 @@ void Main::onRender() {
     }
     if(collisions & COLLISION_TYPE_BALL_PADDLE1) {
       LOG("COLLISION_TYPE_BALL_PADDLE1");
-      _sound.playPing1(_ball.x() / (SCREEN_WIDTH - _settings.paddleOffset - _settings.paddleWidth));
+      _sound.playPing1(0.1f); // pan left
       _ball.bounce_lr();
       _ball.damp_spin(_settings.factCollisionSpinDamp);
       /* HACK */ _ball.add_spin(_settings.factPaddleCollisionAngle * -_paddle[0].speed() * _settings.factPaddleCollisionSpin);
@@ -156,7 +165,7 @@ void Main::onRender() {
     }
     if(collisions & COLLISION_TYPE_BALL_PADDLE2) {
       LOG("COLLISION_TYPE_BALL_PADDLE2");
-      _sound.playPing2(_ball.x() / (SCREEN_WIDTH - _settings.paddleOffset - _settings.paddleWidth));
+      _sound.playPing2(0.9f); // pan right
       _ball.bounce_lr();
       _ball.damp_spin(_settings.factCollisionSpinDamp);
       /* HACK */ _ball.add_spin(_settings.factPaddleCollisionAngle * -_paddle[1].speed() * -_settings.factPaddleCollisionSpin);
@@ -275,23 +284,16 @@ void Main::renderDebugInfo()
     FWDebugFont::printf("BALL X: %f\n", _ball.x());
     FWDebugFont::setPosition(0, POS(14));
     FWDebugFont::printf("BALL Y: %f\n", _ball.y());
-    FWDebugFont::setPosition(0, POS(15));
-    FWDebugFont::printf("VERSION: %d\n", g_version);
 #undef POS
   }
 
-  FWDebugFont::setPosition(150, 600);
-  if(_paddle1.ready()) {
-    FWDebugFont::printf("%d [READY]\n", _score1);
-  } else {
-    FWDebugFont::printf("%d\n", _score1);
-  }
-  FWDebugFont::setPosition(1000, 600);
-  if(_paddle2.ready()) {
-    FWDebugFont::printf("%d [READY]\n", _score2);
-  } else {
-    FWDebugFont::printf("%d\n", _score2);
-  }
+#define IS_READY "[READY] "
+#define WANTS_RESET "[WANTS_RESET]"
+
+  FWDebugFont::setPosition(200, 600);
+  FWDebugFont::printf("%d %s%s\n", _score1, _paddle1.ready() ? IS_READY : "", _paddle1.wants_reset() ? WANTS_RESET : "");
+  FWDebugFont::setPosition(950, 600);
+  FWDebugFont::printf("%d %s%s\n", _score2, _paddle2.ready() ? IS_READY : "", _paddle2.wants_reset() ? WANTS_RESET : "");
 }
 
 void Main::onSize(const FWDisplayInfo& rDispInfo){
@@ -408,6 +410,14 @@ void Main::handle_events()
         LOG("P1_NOT_READY");
         _paddle1.set_ready(false);
         break;
+      case InputEvent::P1_RESET:
+        LOG("P1_RESET");
+        _paddle1.set_wants_reset(true);
+        break;
+      case InputEvent::P1_NOT_RESET:
+        LOG("P1_NOT_RESET");
+        _paddle1.set_wants_reset(false);
+        break;
       case InputEvent::P2_ACC:
         LOG("P2_ACC: %f", ie->acc);
         _paddle2.set_acceleration(_settings.factPaddleAcceleration * ie->acc);
@@ -419,6 +429,14 @@ void Main::handle_events()
       case InputEvent::P2_NOT_READY:
         LOG("P2_NOT_READY");
         _paddle2.set_ready(false);
+        break;
+      case InputEvent::P2_RESET:
+        LOG("P2_RESET");
+        _paddle2.set_wants_reset(true);
+        break;
+      case InputEvent::P2_NOT_RESET:
+        LOG("P2_NOT_RESET");
+        _paddle2.set_wants_reset(false);
         break;
       case InputEvent::ON_SCREEN_LOG_ON:
         LOG("ON_SCREEN_LOG_ON");
@@ -441,29 +459,30 @@ void Main::panic()
 void Main::reset()
 {
   LOG("reset()");
+
   _paddle[0].set_size(_settings.paddleWidth, _settings.paddleHeight);
   _paddle[0].set_position(_settings.paddleOffset + _settings.paddleWidth / 2, SCREEN_HEIGHT/2);
-  _paddle[0].set_color(1.0f, 0.0f, 0.0f);
+  _paddle[0].set_color(0.9f, 0.1f, 0.1f);
   _paddle[0].set_acceleration(0);
   _paddle[0].set_speed(0);
   _paddle[1].set_size(_settings.paddleWidth, _settings.paddleHeight);
   _paddle[1].set_position(SCREEN_WIDTH - _settings.paddleOffset - _settings.paddleWidth / 2, SCREEN_HEIGHT/2);
-  _paddle[1].set_color(0.0f, 0.0f, 1.0f);
+  _paddle[1].set_color(0.1f, 0.1f, 0.9f);
   _paddle[1].set_acceleration(0);
   _paddle[1].set_speed(0);
   
   _ball.set_size(_settings.ballSize);
   _ball.set_position(SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
-  _ball.set_color(0.0f, 1.0f, 0.0f);
   _ball.set_direction(((rand() % 2)*2) - 1, 0.0f);
-   _ball.set_speed(_settings.ballSpeed);
+  _ball.set_speed(_settings.ballSpeed);
   _ball.set_acceleration(_settings.factBallAcceleration);
-   _ball.reset_spin();
+  _ball.reset_spin();
   _ball.reset_rotation_angle();
 
   _ready = false;
 
-  if(_bounces == 0)
+  // only play cough when there are no bounces, but not when the game is being reset
+  if(_bounces == 0 && _paddle1.wants_reset() == false)
   {
     _sound.playCough();
   }

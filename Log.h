@@ -15,15 +15,16 @@
 
 #pragma once
 
-void log_init_file(const char *filename);
-void log_init_net(const char *host, unsigned short port);
-void log_file(const char *format, ...);
-void log_net(const char *format, ...);
+//#define ENABLE_LOG
+
+void log_init(const char *host, unsigned short port);
+void log(const char *format, ...);
 void log_close();
 
 extern unsigned int log_counter;
 
-//#define LOG_SAFE(format, ...) log_file( "[%lu] %s> " format "\n", log_counter, __func__, ## __VA_ARGS__); log_net("[%lu] %s> " format "\n", log_counter, __func__, ## __VA_ARGS__); log_counter++;
-//#define LOG(format, ...) log_net("[%lu] %s> " format "\n", log_counter, __func__, ## __VA_ARGS__); log_counter++;
-#define LOG_SAFE(format, ...)
+#ifdef ENABLE_LOG
+#define LOG(format, ...) log("[%lu] %s> " format "\n", log_counter, __func__, ## __VA_ARGS__); log_counter++;
+#else
 #define LOG(format, ...)
+#endif
