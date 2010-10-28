@@ -66,40 +66,39 @@ bool Input::teardown()
   if(pad1 != NULL) {
     if(_p1Y0 != NULL) {
       pad1->unbindFilter(_p1Y0);
+      _p1Y0 = NULL;
     }
     if(_p1Cross != NULL) {
       pad1->unbindFilter(_p1Cross);
+      _p1Cross = NULL;
     }
     if(_p1Triangle != NULL) {
       pad1->unbindFilter(_p1Triangle);
+      _p1Triangle = NULL;
     }
     if(_p1Start != NULL) {
       pad1->unbindFilter(_p1Start);
+      _p1Start = NULL;
     }
   }
 
-  _p1Y0 = NULL;
-  _p1Cross = NULL;
-  _p1Triangle = NULL;
-  _p1Start = NULL;
 
   FWInputDevice *pad2 = FWInput::getDevice(FWInput::DeviceType_Pad, 1);
 
   if(pad2 != NULL) {
     if(_p2Y0 != NULL) {
       pad2->unbindFilter(_p2Y0);
+      _p2Y0 = NULL;
     }
     if(_p2Cross != NULL) {
       pad2->unbindFilter(_p2Cross);
+      _p2Cross = NULL;
     }
     if(_p2Start != NULL) {
       pad2->unbindFilter(_p2Cross);
+      _p2Start = NULL;
     }
   }
-  
-  _p2Y0 = NULL;
-  _p2Cross = NULL;
-  _p2Start = NULL;
 
   return true;
 }

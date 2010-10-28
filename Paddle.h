@@ -23,7 +23,7 @@ class Paddle
   Paddle() : _ready(false), _wants_reset(false), _acc(0), _speed(0), _maxSpeed(0) { }
   virtual ~Paddle() { }
   void set_size(float w1, float h1) { _w = w1; _h = h1; }
-  void set_position(float x1, float y1) { _x = x1; _y = y1; LOG("Position set to %f, %f", _x, _y); }
+  void set_position(float x1, float y1) { _x = x1; _y = y1; }
   void set_color(float r, float g, float b) { _colorR = r; _colorG = g; _colorB = b; }  
   void set_acceleration(float acc) { _acc = acc; }
   void set_speed(float speed1) { _speed = speed1; }
@@ -47,6 +47,6 @@ private:
   bool  _ready, _wants_reset;
   float _w, _h, _x, _y;
   float _colorR, _colorG, _colorB;
-  float _acc, _speed, _maxSpeed /* absolute */;
+  float _acc, _speed, _maxSpeed;
 };
 

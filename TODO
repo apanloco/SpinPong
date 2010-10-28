@@ -1,2 +1,3 @@
 - Use lw mutex & cond
 - Allow multiple simultaneous sounds (now sounds interrupt each other).
+- Abandon sample fw

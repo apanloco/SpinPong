@@ -15,8 +15,6 @@
 
 #pragma once
 
-#define POINTS (200)
-
 class Ball
 {
   public:

@@ -16,7 +16,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <cell/cell_fs.h>
 
 struct SoundInfo {
   float *data;

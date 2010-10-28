@@ -21,9 +21,8 @@ void log_init(const char *host, unsigned short port);
 void log(const char *format, ...);
 void log_close();
 
-extern unsigned int log_counter;
-
 #ifdef ENABLE_LOG
+extern unsigned int log_counter;
 #define LOG(format, ...) log("[%lu] %s> " format "\n", log_counter, __func__, ## __VA_ARGS__); log_counter++;
 #else
 #define LOG(format, ...)

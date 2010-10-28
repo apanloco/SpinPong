@@ -42,9 +42,7 @@ Sound::Sound()
 {
   _currentSound = NULL;
   _soundPos = 0;
-  for(int i = 0; i < SOUND_NUM; i++) {
-    memset(&_sounds[i], 0, sizeof(struct SoundInfo));
-  }
+  memset(_sounds, 0, sizeof(_sounds));
 }
 
 Sound::~Sound()

@@ -220,8 +220,8 @@ void Main::renderArena()
   // render arena lines
   float vertst[] =
   {
-    0, _settings.heightMargin, 0.0f,
-    SCREEN_WIDTH, _settings.heightMargin, 0.0f,
+    0, _settings.heightMargin - 1, 0.0f,
+    SCREEN_WIDTH, _settings.heightMargin - 1, 0.0f,
   };
 
   float vertsb[] =
@@ -320,20 +320,17 @@ unsigned int Main::check_collisions()
 
   unsigned int collisions = 0;
 
-  // ball->Wall (top/bottom)
   if(_ball.y() < (_ball.size() / 2 + _settings.heightMargin) ||
      _ball.y() > (SCREEN_HEIGHT - _ball.size() / 2 - _settings.heightMargin))
   {
     collisions |= COLLISION_TYPE_BALL_WALL;
   }
   
-  // ball->wall, left
   if(_ball.x() <= (-_ball.size() / 2))
   {
      collisions |= COLLISION_TYPE_BALL_WALL_L;
   }
 
-  // ball->wall, right
   if(_ball.x() >= (SCREEN_WIDTH + _ball.size() / 2))
   {
      collisions |= COLLISION_TYPE_BALL_WALL_R;

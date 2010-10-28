@@ -60,11 +60,11 @@ public:
 private:
   void addEvent(InputEvent *e, int *numEvents);
   InputEvent _events[MAX_INPUT_EVENTS];
-  FWInputFilter  *_p1Y0;
-  FWInputFilter  *_p2Y0;
-  FWInputFilter  *_p1Cross;
-  FWInputFilter  *_p1Triangle;
-  FWInputFilter  *_p1Start;
-  FWInputFilter  *_p2Cross;
-  FWInputFilter  *_p2Start;
+  FWInputFilter *_p1Y0;
+  FWInputFilter *_p2Y0;
+  FWInputFilter *_p1Cross;
+  FWInputFilter *_p1Triangle;
+  FWInputFilter *_p1Start;
+  FWInputFilter *_p2Cross;
+  FWInputFilter *_p2Start;
 };

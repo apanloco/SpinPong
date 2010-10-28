@@ -21,6 +21,8 @@
 #include <PSGL/psgl.h>
 #include <PSGL/psglu.h>
 
+#define POINTS (200)
+
 Ball::Ball() {
   _verts = new float[(POINTS + 1) * 2];
 

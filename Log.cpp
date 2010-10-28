@@ -15,28 +15,22 @@
 
 #include "Log.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <sys/process.h>
-#include <sys/paths.h>
-#include <cell/cell_fs.h>
 #include <cell/sysmodule.h>
 #include <stdarg.h>
-
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/time.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <netdb.h>
+#include <string.h>
 #include <netex/net.h>
-#include <netex/errno.h>
-#include <netex/libnetctl.h>
+#include <netdb.h>
+#include <stdio.h>
 
-
+#ifdef ENABLE_LOG
 unsigned int log_counter = 0;
 int socket_fd = -1;
 struct sockaddr_in address;
+#endif
 
 #define BUF_LEN 1024
 
