@@ -31,7 +31,7 @@ GAMEPLAY/PHYSICS EXPLANATION
 If the left paddle is moving up while it's colliding with the ball, the ball will get a clock-wise 
 spin and turn red. The faster the paddle moves, the more the ball will start spinning, and the brighter
 the color. An anti-clock-wise spin will result in a blue color. The color helps to foresee how the ball
-will bounce on the next collision. Furthermore, a spinning ball will move in a curve to to friction against
+will bounce on the next collision. Furthermore, a spinning ball will move in a curve due to friction against
 the air.
 
 NOTES
