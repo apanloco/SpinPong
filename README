@@ -21,12 +21,22 @@ Press START to signal that you want a game reset. Both players need to signal wa
 INSTALLATION
 
 I built this with the 1.92 SDK on windows with msys. Just do this:
-- cd <directory>
-- build.bat
-- you now have spinpong.pkg
+- cd [directory with Spin Pong]
+- run build.bat
+- you now have SpinPong.pkg
 - install as usual
 
+GAMEPLAY/PHYSICS EXPLANATION
+
+If the left paddle is moving up while it's colliding with the ball, the ball will get a clock-wise 
+spin and turn red. The faster the paddle moves, the more the ball will start spinning, and the brighter
+the color. An anti-clock-wise spin will result in a blue color. The color helps to foresee how the ball
+will bounce on the next collision. Furthermore, a spinning ball will move in a curve to to friction against
+the air.
+
 NOTES
+
+All sounds are from my mouth.
 
 For homebrew developers check out Log.h/Log.cpp for code to log over network.
 To view the logs, use:
